@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Support Troubleshooting Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the expanding flowchart */
+        .flowchart-node {
+            cursor: pointer;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: #f0fdf4; /* Light green */
+            color: #15803d; /* Darker green */
+            border: 1px solid #16a34a; /* A slightly darker border */
+            transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth transition */
+            font-weight: 500;
+            display: flex; /* Use flexbox for alignment */
+            justify-content: space-between; /* Space between text and icon */
+            align-items: center; /* Vertically center items */
+        }
+
+        .flowchart-node:hover {
+            background-color: #d4f4e3; /* A lighter shade on hover */
+            transform: scale(1.02); /* Slight scale on hover */
+            border-color: #15803d;
+        }
+
+        .flowchart-node.expanded {
+            background-color: #d4f4e3; /* Lighter background when expanded */
+            border-color: #15803d;
+        }
+
+        .flowchart-node-content {
+            padding-left: 1rem;
+            margin-top: 0.5rem;
+            display: none; /* Initially hidden */
+            color: #3f6212;
+        }
+
+        .flowchart-node-content.expanded {
+            display: block; /* Show when expanded */
+        }
+
+        .dropdown-container {
+            margin-bottom: 1rem;
+        }
+
+        .dropdown-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #15803d;
+        }
+
+        .custom-select-wrapper {
+            position: relative;
+            user-select: none;
+            flex-grow: 1;
+            min-width: 200px;
+        }
+
+        .custom-select-trigger {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            line-height: 1.5rem;
+            background-color: #f0fdf4;
+            border-width: 1px;
+            border-color: #16a34a;
+            border-radius: 0.375rem;
+            color: #15803d;
+            cursor: pointer;
+            transition: border-color 0.15s ease-in-out, shadow-sm 0.15s ease-in-out;
+        }
+
+        .custom-select-trigger:hover, .custom-select-wrapper:focus-within .custom-select-trigger {
+            border-color: #14b8a6;
+            box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+        }
+
+        .custom-select-trigger span {
+            margin-right: 0.5rem;
+        }
+
+        .custom-select-trigger svg {
+            height: 1rem;
+            width: 1rem;
+            fill: currentColor;
+            color: #15803d;
+        }
+
+        .custom-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: auto;
+            z-index: 20;
+            background-color: #f0fdf4;
+            border-width: 1px;
+            border-color: #16a34a;
+            border-radius: 0.375rem;
+            margin-top: 0.25rem;
+            overflow: auto;
+            max-height: 200px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out, transform 0.15s ease-in-out;
+            width: 100%; /* Ensure dropdown width matches trigger */
+            box-sizing: border-box; /* Include padding and border in width */
+        }
+
+        .custom-select-wrapper.open .custom-options {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+
+        .custom-options li {
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            line-height: 1.5rem;
+            color: #15803d;
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+            white-space: nowrap;
+        }
+
+        .custom-options li:hover, .custom-options li.selected {
+            background-color: #ecfdf5;
+            color: #14b8a6;
+        }
+
+        .custom-select-wrapper select {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            cursor: pointer;
+        }
+
+        .arrow-icon {
+            transition: transform 0.3s ease; /* Smooth transition for rotation */
+        }
+
+        .arrow-icon.open {
+            transform: rotate(180deg); /* Rotate the arrow when dropdown is open */
+        }
+
+    </style>
+</head>
+<body class="bg-gradient-to-br from-white to-emerald-100 min-h-screen flex items-start justify-center py-8 font-sans">
+    <div class="max-w-3xl w-full mx-auto px-4 py-6 bg-white rounded-xl shadow-lg border border-emerald-200">
+        <h1 class="text-2xl font-semibold text-emerald-700 mb-6 text-center">Tech Support Troubleshooting Guide</h1>
+
+        <div class="mb-6">
+            <label for="device-type" class="dropdown-label">Device Type:</label>
+            <div class="custom-select-wrapper" id="device-select-wrapper">
+                <div class="custom-select-trigger" id="device-select-trigger">
+                    <span>Select Device</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="arrow-icon">
+                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 011.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="custom-options" id="device-select-options">
+                    <select id="device-type" class="hidden">
+                        <option value="">Select Device</option>
+                        <option value="computer">Computer</option>
+                        <option value="phone">Phone</option>
+                        <option value="tv">TV</option>
+                        <option value="printer">Printer</option>
+                    </select>
+                    <ul>
+                        <li data-value="computer">Computer</li>
+                        <li data-value="phone">Phone</li>
+                        <li data-value="tv">TV</li>
+                        <li data-value="printer">Printer</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="troubleshooting-flowchart" class="space-y-4">
+            <div class="flowchart-node">
+                <span>Initial Checks</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 011.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                </svg>
+                <div class="flowchart-node-content">
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li><strong>Check Power:</strong> Ensure the device is plugged in and the power outlet is working.</li>
+                        <li><strong>Check Connections:</strong> Verify all cables (power, data, video) are securely connected.</li>
+                        <li><strong>Reboot:</strong> Restart the device.  This simple step often resolves many issues.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center text-gray-600 text-sm">
+            <p>If the problem persists, please submit a help desk ticket with detailed information about the issue and the steps you have taken.</p>
+        </div>
+    </div>
+
+    <script>
+        const deviceTypeSelectWrapper = document.getElementById('device-select-wrapper');
+        const deviceTypeSelectTrigger = document.getElementById('device-select-trigger');
+        const deviceTypeSelectOptions = document.getElementById('device-select-options');
+        const deviceTypeSelectElement = document.getElementById('device-type');
+        const troubleshootingFlowchart = document.getElementById('troubleshooting-flowchart');
+        const initialChecksNode = document.querySelector('.flowchart-node');
+
+
+        let selectedDevice = '';
+        let isDropdownOpen = false;
+
+        const deviceSpecificFlowcharts = {
+            computer: [
+                {
+                    title: "Computer Specific Issues",
+                    content: `<ol class="list-decimal list-inside space-y-2">
+                                <li><strong>No Power:</strong> Check the power cord, outlet, and power supply.</li>
+                                <li><strong>No Display:</strong> Check monitor connections, try a different monitor.</li>
+                                <li><strong>Slow Performance:</strong> Close unnecessary programs, check disk space.</li>
+                                <li><strong>No Internet:</strong> Check network cable, check Wi-Fi connection.</li>
+                                <li><strong>Check for error messages:</strong> Note any specific error messages.</li>
+                                
+                                <li><strong>Check hardware:</strong></li>
+                            </ol>`
+                },
+                {
+                    title: "Operating System Issues",
+                    content: `<ol class="list-decimal list-inside space-y-2">
+                                <li><strong>Blue Screen/Freezing:</strong> Note any error messages.</li>
+                                 <li><strong>Startup Problems:</strong> Restart the computer.</li>
+                                <li><strong>Software Errors:</strong> Reinstall or update the application.</li>
+                                <li><strong>Check for recent updates:</strong> Ensure the OS is up to date.</li>
+                                
+                            </ol>`
+                },
+                {
+                    title: "Peripheral Issues",
+                    content: `<ol class="list-decimal list-inside space-y-2">
+                                <li><strong>Keyboard/Mouse:</strong> Check connections, try different ports, replace batteries.</li>
+                                <li><strong>Printer:</strong> Check connections, ensure paper and ink, check for error lights.</li>
+                                <li><strong>USB Devices:</strong> Try different ports, check device manager for errors.</li>
+                                <li><strong>Audio:</strong> Check volume levels, check audio cables, try different speakers/headphones.</li>
+                            </ol>`
+                }
+            ],
+            phone: [
+                {
+                    title: "Phone Specific Issues",
+                    content: `<ol class="list-decimal list-inside space-y-2">
+                                <li><strong>No Power:</strong> Check charger, try a different charger and outlet.</li>
+                                <li><strong>No Signal:</strong> Check for service outages, try airplane mode toggle.</li>
+                                <li><strong>Wi-Fi Problems:</strong> Check Wi-Fi settings on phone.</li>
+                                <li><strong>Touchscreen Issues:</strong> Clean screen, remove case, restart phone.</li>
+                                <li><strong>Check storage space:</strong> Ensure the phone has enough free storage.</li>
+                                <li><strong>Check for physical damage:</strong> Look for cracks or water damage.</li>
+                            </ol>`
+                },
+                {
+                    title: "App Issues",
+                    content: `<ol class="list-decimal list-inside space-y-2">
+                                <li><strong>App Crashing:</strong> Close and reopen the app, update the app, clear app cache.</li>
+                                <li><strong>App Not Responding:</strong> Force stop the app, uninstall and reinstall the app.</li>
+                                <li><strong>Check app permissions:</strong> Ensure the app has the necessary permissions.</li>
+                                <li><strong>Check for updates:</strong> Make sure the app is the latest version.</li>
+                            </ol>`
+                },
+                {
+                    title: "Connectivity Issues",
+                    content: `<ol class="list-decimal list-inside space-y-2">
+                            <li><strong>Bluetooth Problems:</strong> Toggle Bluetooth off and on, unpair and re-pair device.</li>
+                            <li><strong>Cellular Data Issues:</strong> Check data settings, check for data roaming if applicable.</li>
+                            <li><strong>GPS Issues:</strong> Check location settings, ensure GPS is enabled.</li>
+                            <li><strong>NFC Issues:</strong> Check if NFC is enabled, try a different NFC device.</li>
+                            </ol>`
+                }
+            ],
+            tv: [
+                {
+                    title: "TV Specific Issues",
+                    content: `<ol class="list-decimal list-inside space-y-2">
+                                <li><strong>No Power:</strong> Check power cord, outlet, and surge protector.</li>
+                                <li><strong>No Picture:</strong> Check input source, check cables (HDMI, etc.), try a different input.</li>
+                                <li><strong>No Sound:</strong> Check volume, check mute status, check audio cables, try different speakers.</li>
+                                 <li><strong>Remote Control Issues:</strong> Replace batteries, check for obstructions, try a universal remote.</li>
+                                 <li><strong>Check external devices:</strong> Ensure cable box, DVD player, etc., are working.</li>
+                                 <li><strong>Check TV settings:</strong> Verify display and audio settings.</li>
+                            </ol>`
+                },
+                {
+                    title: "Smart TV Issues",
+                    content: `<ol class="list-decimal list-inside space-y-2">
+                                <li><strong>Network Problems:</strong> Check Wi-Fi connection, check Ethernet cable.</li>
+                                <li><strong>App Issues:</strong> Update the app, clear app cache, reinstall the app.</li>
+                                <li><strong>Streaming Problems:</strong> Check internet speed, check streaming service status.</li>
+                                <li><strong>Check for TV updates:</strong> Ensure the TV's firmware is up to date.</li>
+                            </ol>`
+                },
+            ],
+            printer: [
+                {
+                    title: "Printer Specific Issues",
+                    content: `<ol class="list-decimal list-inside space-y-2">
+                                <li><strong>No Power:</strong> Check power cord and outlet.</li>
+                                <li><strong>No Connection:</strong> Check USB or network cable, check Wi-Fi connection.</li>
+                                <li><strong>Not Printing:</strong> Check paper level, check ink/toner levels, check for error messages.</li>
+                                <li><strong>Check the print queue:</strong> Clear any stuck print jobs.</li>
+                                <li><strong>Set as default printer:</strong> Ensure the correct printer is set as the default.</li>
+                            </ol>`
+                },
+                {
+                    title: "Print Quality Issues",
+                    content: `<ol class="list-decimal list-inside space-y-2">
+                                <li><strong>Poor Print Quality:</strong> Clean print heads, check ink/toner levels, check paper type.</li>
+                                <li><strong>Paper Jams:</strong> Carefully remove jammed paper, check paper path for obstructions.</li>
+                                 <li><strong>Check printer settings:</strong> Verify print quality settings.</li>
+                                 <li><strong>Replace ink cartridges:</strong> Ensure ink cartridges are not empty or low.</li>
+                            </ol>`
+                },
+                {
+                    title: "Scanner Issues",
+                    content: `<ol class="list-decimal list-inside space-y-2">
+                                <li><strong>Scanner Not Working:</strong> Check connections, ensure scanner glass is clean.</li>
+                                <li><strong>Scan Quality Issues:</strong> Clean scanner glass, adjust scan settings.</li>
+                                <li><strong>Check scanner drivers:</strong> Ensure the scanner drivers are installed correctly.</li>
+                                
+                            </ol>`
+                }
+            ]
+        };
+
+        function addDeviceSpecificOptions(deviceType) {
+            troubleshootingFlowchart.innerHTML = `<div class="flowchart-node">
+                <span>Initial Checks</span>
+                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 011.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                </svg>
+                <div class="flowchart-node-content">
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li><strong>Check Power:</strong> Ensure the device is plugged in and the power outlet is working.</li>
+                        <li><strong>Check Connections:</strong> Verify all cables (power, data, video) are securely connected.</li>
+                        <li><strong>Reboot:</strong> Restart the device.  This simple step often resolves many issues.</li>
+                    </ol>
+                </div>
+            </div>`; //clear the flowchart
+
+            const selectedDeviceFlowchart = deviceSpecificFlowcharts[deviceType];
+            if (selectedDeviceFlowchart) {
+                selectedDeviceFlowchart.forEach(nodeData => {
+                    const node = document.createElement('div');
+                    node.className = 'flowchart-node';
+                    node.innerHTML = `<span>${nodeData.title}</span>
+                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6">
+                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 011.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                    </svg>`;
+                    const content = document.createElement('div');
+                    content.className = 'flowchart-node-content';
+                    content.innerHTML = nodeData.content;
+                    node.appendChild(content);
+                    node.addEventListener('click', toggleNode);
+                    troubleshootingFlowchart.appendChild(node);
+                });
+            }
+            // Add the initial checks node
+            const initialChecksNode = document.querySelector('.flowchart-node');
+            if (initialChecksNode) {
+                initialChecksNode.addEventListener('click', toggleNode);
+            }
+        }
+
+        function toggleNode(event) {
+            const node = event.currentTarget; // Use currentTarget
+            node.classList.toggle('expanded');
+            const content = node.querySelector('.flowchart-node-content');
+            content.classList.toggle('expanded');
+             const arrowIcon = node.querySelector('.arrow-icon');
+            if (arrowIcon) {
+                arrowIcon.classList.toggle('open');
+            }
+        }
+
+        deviceTypeSelectTrigger.addEventListener('click', () => {
+            deviceTypeSelectWrapper.classList.toggle('open');
+            const arrowIcon = deviceTypeSelectTrigger.querySelector('.arrow-icon');
+            if (arrowIcon) {
+                arrowIcon.classList.toggle('open'); // Rotate arrow when dropdown opens
+            }
+            if (!isDropdownOpen) {
+                document.addEventListener('click', closeDropdown);
+            } else {
+                document.removeEventListener('click', closeDropdown);
+            }
+            isDropdownOpen = !isDropdownOpen;
+        });
+
+        deviceTypeSelectOptions.addEventListener('click', (event) => {
+            if (event.target.tagName === 'LI') {
+                const value = event.target.dataset.value;
+                selectedDevice = value;
+                deviceTypeSelectTrigger.querySelector('span').textContent = event.target.textContent;
+                deviceTypeSelectElement.value = value;
+                deviceTypeSelectWrapper.classList.remove('open');
+                const arrowIcon = deviceTypeSelectTrigger.querySelector('.arrow-icon');
+                 if (arrowIcon) {
+                    arrowIcon.classList.remove('open');
+                }
+                isDropdownOpen = false;
+                document.removeEventListener('click', closeDropdown);
+                addDeviceSpecificOptions(value);
+            }
+        });
+
+        deviceTypeSelectElement.addEventListener('change', (event) => {
+            selectedDevice = event.target.value;
+            deviceTypeSelectTrigger.querySelector('span').textContent = deviceTypeSelectElement.options[deviceTypeSelectElement.selectedIndex].text;
+            addDeviceSpecificOptions(selectedDevice);
+        });
+
+        function closeDropdown(event) {
+            if (!deviceTypeSelectWrapper.contains(event.target) && !deviceTypeSelectOptions.contains(event.target)) {
+                deviceTypeSelectWrapper.classList.remove('open');
+                const arrowIcon = deviceTypeSelectTrigger.querySelector('.arrow-icon');
+                if (arrowIcon) {
+                     arrowIcon.classList.remove('open');
+                }
+                isDropdownOpen = false;
+                document.removeEventListener('click', closeDropdown);
+            }
+        }
+
+        // Initialize dropdown
+        deviceTypeSelectElement.selectedIndex = 0;
+        deviceTypeSelectTrigger.querySelector('span').textContent = deviceTypeSelectElement.options[deviceTypeSelectElement.selectedIndex].text;
+
+    </script>
+</body>
+</html>
+
